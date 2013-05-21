@@ -1,0 +1,7 @@
+<html>
+<head></head>
+<body>
+
+<applet code="main.MainApplet.class" archive="gisapp.jar" alt="Error loading applet" width="650" height="500"></applet>
+
+</body></html>
