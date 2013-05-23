@@ -33,6 +33,7 @@ public class MainApplet extends javax.swing.JApplet {
     static final Logger logger = Logger.getLogger(MainApplet.class.getName());
     private JLabel label = new JLabel();
     final int maxZoom = 18;
+    private DAO dao = DAO.getInstance();
     /**
      * Initializes the applet MainApplet
      */
@@ -70,19 +71,38 @@ public class MainApplet extends javax.swing.JApplet {
                         @Override
                         public void mouseClicked(MouseEvent evt){
                             logger.info("Mouse was clicked");
+                            
+                            //A set of compulsory property keys
+                            Set<String> hardKeys = new HashSet<>();
+                            hardKeys.add("longitude");
+                            hardKeys.add("latitude");
+                            hardKeys.add("file_name");
+                            hardKeys.add("label");
+                            String labelVal = dao.getConfig().getProperty("label");
+                            hardKeys.add(labelVal);
+                            
+                            
                             if(evt.getClickCount()>1){
                                 Point p = evt.getPoint();
                                 Rectangle rect = jmk.getMainMap().getViewportBounds();
                                 p.translate(rect.x, rect.y);
                                 GeoPosition gp = jmk.getMainMap().getTileFactory().pixelToGeo(p, jmk.getMainMap().getZoom());
-                                logger.info("This was clicked: "+gp.toString());  
-                                String[] li = DAO.find(gp); 
+                                logger.log(Level.INFO, "This was clicked: {0}", gp.toString());  
+                                String[] li = dao.find(gp); 
                                 if(li==null){
-                                    JOptionPane.showMessageDialog(rootPane, "No hotel near here");
+                                    JOptionPane.showMessageDialog(rootPane, "No waypoint near here");
                                     return;
                                 }
-                                logger.info("This was fected: "+new GeoPosition(DAO.coorConverter(li[5]),DAO.coorConverter(li[6])).toString());
-                                JOptionPane.showMessageDialog(rootPane, "Name: "+li[1]+"\n Address: "+li[2]);
+                                logger.log(Level.INFO, "This was fetched: {0}", new GeoPosition(dao.coorConverter(li[dao.getLatInd()]),dao.coorConverter(li[dao.getLongInd()])));
+                                
+                                String msg =""+Character.toUpperCase(labelVal.charAt(0))+labelVal.substring(1)+": "+li[Integer.parseInt(dao.getConfig().getProperty(labelVal))]+" \n";
+                                Object[] keys = dao.getConfig().keySet().toArray();
+                                for(int i=0;i<keys.length;i++){
+                                    if(!hardKeys.contains(keys[i].toString()))                                        
+                                                msg= msg+Character.toUpperCase(keys[i].toString().charAt(0))+keys[i].toString().substring(1)+": "+li[Integer.parseInt(dao.getConfig().getProperty(keys[i].toString()))]+" \n";
+                                }
+                                
+                                JOptionPane.showMessageDialog(rootPane,msg);
                             }
                         }
                     });
@@ -96,9 +116,10 @@ public class MainApplet extends javax.swing.JApplet {
                             Rectangle rect = jmk.getMainMap().getViewportBounds();
                             p.translate(rect.x, rect.y);
                             GeoPosition gp = jmk.getMainMap().getTileFactory().pixelToGeo(p, jmk.getMainMap().getZoom());
-                            String[] li = DAO.find(gp);
+                            String[] li = dao.find(gp);
                             if(li != null){
-                                label.setText(li[1]);   
+                                String labelVal = dao.getConfig().getProperty("label");
+                                label.setText(li[Integer.parseInt(dao.getConfig().getProperty(labelVal))]);   
                                 label.setVisible(true);
                             }else{
                                 label.setText("");
@@ -119,7 +140,7 @@ public class MainApplet extends javax.swing.JApplet {
     private Set<Waypoint> loadPoints(){
         
         Set<Waypoint> wayPoints = new HashSet<>();
-        List<String[]> l = DAO.getAll();
+        List<String[]> l = dao.getAll();
         try{
              
             String[] line;            
@@ -127,8 +148,8 @@ public class MainApplet extends javax.swing.JApplet {
             for(int i=1;i<l.size();i++){
                 line = l.get(i);
                 logger.log(Level.INFO, "Converting: {0}, {1} of line {2} to decimal.", new Object[]{line[5], line[6], i});                
-                double coordOne = DAO.coorConverter(line[5]);
-                double coordTwo = DAO.coorConverter(line[6]);
+                double coordOne = dao.coorConverter(line[dao.getLatInd()]);
+                double coordTwo = dao.coorConverter(line[dao.getLongInd()]);
                 Waypoint p = new Waypoint(new GeoPosition(coordOne,coordTwo));
                
                 wayPoints.add(p);
