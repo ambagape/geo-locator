@@ -1,4 +1,4 @@
-Hotel-Locator
+Geo-Locator
 =============
 
-An Application for Locating Hotels in Benin
+An Applet for visualizing geo data.
